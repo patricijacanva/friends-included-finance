@@ -1,0 +1,43 @@
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; color: #1d1d1f; background: #f8fafc; }
+main { max-width: 800px; margin: 4rem auto; padding: 0 1.25rem; }
+.role-selector { margin-top: 2rem; padding: 1.5rem; border: 1px solid #cbd5e1; border-radius: 0.75rem; background: #fff; }
+.role-selector h2 { margin-top: 0; }
+label, select { display: block; }
+label { margin-top: 1.25rem; font-weight: 700; }
+select, input, textarea { width: 100%; max-width: 36rem; margin-top: 0.5rem; padding: 0.7rem; font: inherit; }
+textarea { min-height: 6rem; resize: vertical; }
+fieldset { max-width: 36rem; margin: 1.5rem 0; padding: 1rem; border: 1px solid #cbd5e1; }
+fieldset label { margin-top: 0.85rem; }
+button { padding: 0.75rem 1rem; border: 0; border-radius: 0.4rem; background: #0f766e; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+button:disabled { opacity: 0.65; cursor: wait; }
+.transaction-form { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #cbd5e1; }
+.records { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #cbd5e1; }
+.manager-queue { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #cbd5e1; }
+.dashboard { margin-bottom: 2rem; }
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
+.dashboard-card { margin: 1rem 0; padding: 1rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; background: #fff; }
+.dashboard-card h3 { margin-top: 0; }
+dl { display: grid; grid-template-columns: 1fr auto; gap: 0.6rem 1rem; margin: 0; }
+dt, dd { margin: 0; }
+.dashboard-summary { color: #475569; }
+.telegram-setup { margin: 2rem 0; padding: 1rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; background: #fff; }
+.telegram-setup h2 { margin-top: 0; }
+.queue-list { display: grid; gap: 1rem; }
+.queue-card { padding: 1rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; background: #fff; }
+.queue-card h4 { margin: 0 0 0.5rem; }
+.queue-card p { margin: 0.5rem 0; }
+.decision-form { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; }
+.decision-form select { margin-bottom: 1rem; }
+.split-inputs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; max-width: 36rem; margin-bottom: 1rem; }
+.split-inputs label { margin: 0; font-size: 0.9rem; }
+.split-inputs input { margin-top: 0.35rem; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 0.75rem; border: 1px solid #cbd5e1; text-align: left; }
+th { background: #e2e8f0; }
+.selection { margin-top: 1rem; font-weight: 700; }
+.security-note { margin-top: 1.5rem; color: #475569; font-size: 0.9rem; }
+.error { color: #b91c1c; font-weight: 700; }
+.success { color: #166534; font-weight: 700; }
