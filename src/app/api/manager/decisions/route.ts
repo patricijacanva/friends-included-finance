@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { allocateExpense, approveSale } from "@/lib/transactions/manager-decisions";
 import { SubmissionError } from "@/lib/transactions/submit-sale";
+import { notifyExpenseAllocation, notifySaleApproval } from "@/lib/telegram-decision-notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -9,11 +10,15 @@ export async function POST(request: Request) {
     const body = await request.json();
     if (body.kind === "sale") {
       const result = await approveSale(body);
-      return NextResponse.json({ message: `${result.reference} approved.`, result });
+      const notification = await notifySaleApproval(body.saleId);
+      const suffix = notification.status === "sent" ? " Telegram notification sent." : notification.status === "no_recipient" ? " No Telegram recipient linked." : " Approval saved; Telegram notification failed and can be retried.";
+      return NextResponse.json({ message: `${result.reference} approved.${suffix}`, result });
     }
     if (body.kind === "expense") {
       const result = await allocateExpense(body);
-      return NextResponse.json({ message: `${result.reference} allocation saved.`, result });
+      const notification = await notifyExpenseAllocation(body.expenseId);
+      const suffix = notification.status === "sent" ? " Telegram notification sent." : notification.status === "no_recipient" ? " No Telegram recipient linked." : " Allocation saved; Telegram notification failed and can be retried.";
+      return NextResponse.json({ message: `${result.reference} allocation saved.${suffix}`, result });
     }
     throw new SubmissionError("Unknown manager decision.");
   } catch (error) {

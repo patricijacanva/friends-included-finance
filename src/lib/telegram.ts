@@ -49,12 +49,22 @@ export async function findLinkedTelegramEmployee(telegramUserId: number) {
   return employee?.active ? employee : null;
 }
 
-export async function updateSubmissionNotification(transactionId: string, delivered: boolean, errorMessage?: string) {
+export async function updateTelegramNotification(
+  transactionId: string,
+  notificationKind: "submission_confirmation" | "sale_approval" | "expense_allocation",
+  delivered: boolean,
+  errorMessage?: string,
+) {
   const supabase = createSupabaseServerClient();
+  const { data: current } = await supabase.from("telegram_notification_state")
+    .select("attempt_count").eq("transaction_id", transactionId).eq("notification_kind", notificationKind).maybeSingle();
   const update = delivered
-    ? { status: "sent", sent_at: new Date().toISOString(), last_attempt_at: new Date().toISOString(), error_message: null }
-    : { status: "failed", last_attempt_at: new Date().toISOString(), error_message: errorMessage ?? "Telegram delivery failed" };
+    ? { status: "sent", sent_at: new Date().toISOString(), last_attempt_at: new Date().toISOString(), error_message: null, attempt_count: (current?.attempt_count ?? 0) + 1 }
+    : { status: "failed", last_attempt_at: new Date().toISOString(), error_message: errorMessage ?? "Telegram delivery failed", attempt_count: (current?.attempt_count ?? 0) + 1 };
   const { error } = await supabase.from("telegram_notification_state")
-    .update(update).eq("transaction_id", transactionId).eq("notification_kind", "submission_confirmation");
+    .update(update).eq("transaction_id", transactionId).eq("notification_kind", notificationKind);
   if (error) throw error;
 }
+
+export const updateSubmissionNotification = (transactionId: string, delivered: boolean, errorMessage?: string) =>
+  updateTelegramNotification(transactionId, "submission_confirmation", delivered, errorMessage);
