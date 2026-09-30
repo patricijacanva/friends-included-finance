@@ -14,7 +14,7 @@ type GoogleConfig = { spreadsheetId: string; clientEmail: string; privateKey: st
 function googleConfig(): GoogleConfig {
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/^"|"$/g, "").replace(/\\n/g, "\n");
   if (!spreadsheetId || !clientEmail || !privateKey) throw new Error("Google Sheets configuration is incomplete.");
   return { spreadsheetId, clientEmail, privateKey };
 }
