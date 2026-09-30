@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { findLinkedTelegramEmployee, recordTelegramChat, sendTelegramMessage, TelegramMessage, updateSubmissionNotification } from "@/lib/telegram";
 import { submitSale } from "@/lib/transactions/submit-sale";
 import { submitExpense } from "@/lib/transactions/submit-expense";
+import { syncAndRecord } from "@/lib/google-sheets";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
         actorEmployeeId: employee.id, reference: parts[0], customer: parts[1], project: parts[2].toUpperCase() as "A" | "B", description: parts[3], amount: parts[4],
         richardPercent: Number(parts[5]), anastasiaPercent: Number(parts[6]), jeanClaudePercent: Number(parts[7]), source: "telegram", submissionTelegramChatId: sender.chatId,
       });
+      await syncAndRecord(result.transactionId);
       const confirmation = `Sale ${parts[0].toUpperCase()} recorded. Amount €${(result.amountCents / 100).toFixed(2)}. Project ${parts[2].toUpperCase()}. Status: Pending approval.`;
       try { await sendTelegramMessage(sender.chatId, confirmation); await updateSubmissionNotification(result.transactionId, true); }
       catch (deliveryError) { await updateSubmissionNotification(result.transactionId, false, deliveryError instanceof Error ? deliveryError.message : undefined); }
@@ -81,6 +83,7 @@ export async function POST(request: Request) {
         actorEmployeeId: employee.id, reference: parts[0], description: parts[1], category: parts[2].toLowerCase() as "materials" | "travel" | "other", amount: parts[3], proposedAllocation: allocation,
         source: "telegram", submissionTelegramChatId: sender.chatId,
       });
+      await syncAndRecord(result.transactionId);
       const status = allocation === "company_overhead" ? "Company overhead" : "Awaiting allocation";
       try { await sendTelegramMessage(sender.chatId, `Expense ${parts[0].toUpperCase()} recorded. Amount €${(result.transactionId ? Number(parts[3].replace(',', '.')).toFixed(2) : parts[3])}. Proposed allocation: ${allocation === "company_overhead" ? "Company overhead" : `Project ${allocation}`}. Status: ${status}.`); await updateSubmissionNotification(result.transactionId, true); }
       catch (deliveryError) { await updateSubmissionNotification(result.transactionId, false, deliveryError instanceof Error ? deliveryError.message : undefined); }
