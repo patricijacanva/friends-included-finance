@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const credentialPath = process.argv[2];
 if (!credentialPath) {
@@ -13,7 +14,8 @@ if (!credentials.client_email || !credentials.private_key || !credentials.projec
   process.exit(1);
 }
 
-const envPath = path.resolve(".env.local");
+const projectDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const envPath = path.join(projectDirectory, ".env.local");
 const existing = fs.existsSync(envPath) ? fs.readFileSync(envPath, "utf8").split(/\r?\n/) : [];
 const replacementKeys = new Set([
   "GOOGLE_SERVICE_ACCOUNT_EMAIL",
