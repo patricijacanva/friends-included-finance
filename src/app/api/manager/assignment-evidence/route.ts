@@ -63,7 +63,7 @@ export async function GET(request: Request) {
         commissionCents: decision ? [decision.richard_commission_cents, decision.anastasia_commission_cents, decision.jean_claude_commission_cents] : null,
         splitChanged: decision?.split_changed ?? null,
         sheetsStatus: sheetsByTransaction.get(sale.transaction_id) ?? "pending",
-        submissionNotification: notifications?.get("submission_confirmation") ?? "not_applicable",
+        submissionNotification: transaction.source === "website" ? "not_applicable" : notifications?.get("submission_confirmation") ?? "not_applicable",
         decisionNotification: notifications?.get("sale_approval") ?? "not_required",
       }];
     }).sort((a, b) => a.reference.localeCompare(b.reference));
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
         allocationChanged: allocation?.allocation_changed ?? null,
         automatic: allocation?.automatic ?? false,
         sheetsStatus: sheetsByTransaction.get(expense.transaction_id) ?? "pending",
-        submissionNotification: notifications?.get("submission_confirmation") ?? "not_applicable",
+        submissionNotification: transaction.source === "website" ? "not_applicable" : notifications?.get("submission_confirmation") ?? "not_applicable",
         decisionNotification: notifications?.get("expense_allocation") ?? "not_required",
       }];
     }).sort((a, b) => a.reference.localeCompare(b.reference));

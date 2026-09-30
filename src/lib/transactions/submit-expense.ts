@@ -43,6 +43,11 @@ export async function submitExpense(input: ExpenseSubmission) {
   return { transactionId: data, message: `Expense saved with ${status} status. Google Sheets sync is pending.` };
 }
 
-export function submitWebsiteExpense(input: Omit<ExpenseSubmission, "source" | "submissionTelegramChatId">) {
-  return submitExpense({ ...input, source: "website", submissionTelegramChatId: null });
+export async function submitWebsiteExpense(input: Omit<ExpenseSubmission, "source" | "submissionTelegramChatId">) {
+  const result = await submitExpense({ ...input, source: "website", submissionTelegramChatId: null });
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase.from("telegram_notification_state").update({ status: "not_applicable", chat_id: null, error_message: null })
+    .eq("transaction_id", result.transactionId).eq("notification_kind", "submission_confirmation");
+  if (error) throw error;
+  return result;
 }

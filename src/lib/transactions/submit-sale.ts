@@ -63,6 +63,13 @@ export async function submitSale(input: SaleSubmission) {
   return { transactionId: data, amountCents };
 }
 
-export function submitWebsiteSale(input: Omit<SaleSubmission, "source" | "submissionTelegramChatId">) {
-  return submitSale({ ...input, source: "website", submissionTelegramChatId: null });
+export async function submitWebsiteSale(input: Omit<SaleSubmission, "source" | "submissionTelegramChatId">) {
+  const result = await submitSale({ ...input, source: "website", submissionTelegramChatId: null });
+  // Website forms display their own confirmation; only Telegram submissions
+  // receive a bot submission confirmation. Keep delivery state truthful.
+  const supabase = createSupabaseServerClient();
+  const { error } = await supabase.from("telegram_notification_state").update({ status: "not_applicable", chat_id: null, error_message: null })
+    .eq("transaction_id", result.transactionId).eq("notification_kind", "submission_confirmation");
+  if (error) throw error;
+  return result;
 }
