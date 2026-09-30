@@ -95,11 +95,40 @@ export async function GET(request: Request) {
     const officialExpenses = expenses.filter((expense) => isRequiredTestReference(expense.reference));
     const practiceSales = sales.filter((sale) => !isRequiredTestReference(sale.reference));
     const practiceExpenses = expenses.filter((expense) => !isRequiredTestReference(expense.reference));
-    const companyResult = (rows: typeof sales, expenseRows: typeof expenses) => {
+    const resultSummary = (rows: typeof sales, expenseRows: typeof expenses) => {
       const income = rows.filter((sale) => sale.status === "approved").reduce((total, sale) => total + sale.amountCents, 0);
       const commission = rows.reduce((total, sale) => total + (sale.commissionCents?.reduce((sum, cents) => sum + cents, 0) ?? 0), 0);
-      const expense = expenseRows.reduce((total, item) => total + item.amountCents, 0);
-      return income - commission - expense;
+      const projectA = { incomeCents: 0, commissionCents: 0, expensesCents: 0, resultCents: 0 };
+      const projectB = { incomeCents: 0, commissionCents: 0, expensesCents: 0, resultCents: 0 };
+      const projectFor = (project: string) => project === "A" ? projectA : projectB;
+      const commissions = { richardCents: 0, anastasiaCents: 0, jeanClaudeCents: 0 };
+      for (const sale of rows) {
+        const project = projectFor(sale.project);
+        if (sale.status === "approved") project.incomeCents += sale.amountCents;
+        if (sale.commissionCents) {
+          const totalCommission = sale.commissionCents.reduce((sum, cents) => sum + cents, 0);
+          project.commissionCents += totalCommission;
+          commissions.richardCents += sale.commissionCents[0];
+          commissions.anastasiaCents += sale.commissionCents[1];
+          commissions.jeanClaudeCents += sale.commissionCents[2];
+        }
+      }
+      let overheadCents = 0;
+      let awaitingCents = 0;
+      for (const expenseRow of expenseRows) {
+        if (expenseRow.status === "awaiting_allocation") awaitingCents += expenseRow.amountCents;
+        if (expenseRow.finalAllocation === "company_overhead") overheadCents += expenseRow.amountCents;
+        if (expenseRow.finalAllocation === "A" || expenseRow.finalAllocation === "B") projectFor(expenseRow.finalAllocation).expensesCents += expenseRow.amountCents;
+      }
+      projectA.resultCents = projectA.incomeCents - projectA.commissionCents - projectA.expensesCents;
+      projectB.resultCents = projectB.incomeCents - projectB.commissionCents - projectB.expensesCents;
+      return {
+        projectA, projectB, commissions, overheadCents, awaitingCents,
+        approvedIncomeCents: income, commissionCents: commission,
+        companyResultCents: income - commission - expenseRows.reduce((total, item) => total + item.amountCents, 0),
+        pendingSales: rows.filter((sale) => sale.status === "pending_approval").length,
+        awaitingExpenses: expenseRows.filter((expense) => expense.status === "awaiting_allocation").length,
+      };
     };
 
     return NextResponse.json({
@@ -108,8 +137,9 @@ export async function GET(request: Request) {
       practice: {
         salesCount: practiceSales.length,
         expensesCount: practiceExpenses.length,
-        companyResultCents: companyResult(practiceSales, practiceExpenses),
+        companyResultCents: resultSummary(practiceSales, practiceExpenses).companyResultCents,
       },
+      officialResults: resultSummary(officialSales, officialExpenses),
     });
   } catch (error) {
     const message = error instanceof SubmissionError ? error.message : "Unable to load assignment evidence.";

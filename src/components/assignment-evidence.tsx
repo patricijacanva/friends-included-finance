@@ -10,7 +10,13 @@ type Expense = {
   id: string; reference: string; source: "website" | "telegram"; submitter: string; amountCents: number; category: string; status: string;
   proposedAllocation: string; finalAllocation: string | null; allocationChanged: boolean | null; automatic: boolean; sheetsStatus: string; submissionNotification: string; decisionNotification: string;
 };
-type Evidence = { sales: Sale[]; expenses: Expense[]; practice: { salesCount: number; expensesCount: number; companyResultCents: number }; error?: string };
+type Summary = {
+  projectA: { incomeCents: number; commissionCents: number; expensesCents: number; resultCents: number };
+  projectB: { incomeCents: number; commissionCents: number; expensesCents: number; resultCents: number };
+  commissions: { richardCents: number; anastasiaCents: number; jeanClaudeCents: number };
+  overheadCents: number; awaitingCents: number; approvedIncomeCents: number; commissionCents: number; companyResultCents: number; pendingSales: number; awaitingExpenses: number;
+};
+type Evidence = { sales: Sale[]; expenses: Expense[]; practice: { salesCount: number; expensesCount: number; companyResultCents: number }; officialResults: Summary; error?: string };
 
 function euro(cents: number) { return new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" }).format(cents / 100); }
 function split(values: number[] | null) { return values ? `${values[0]} / ${values[1]} / ${values[2]}%` : "—"; }
@@ -40,6 +46,9 @@ export function AssignmentEvidence({ managerId, refreshKey }: { managerId: strin
     {!evidence && !error ? <p>Loading required test records…</p> : null}
     {evidence ? <>
       <p className="practice-note">Additional practice records are retained separately: {evidence.practice.salesCount} sale(s), {evidence.practice.expensesCount} expense(s). They remain in the live dashboard, with an actual combined company-result effect of {euro(evidence.practice.companyResultCents)}.</p>
+      <h3>Official two-test financial results</h3>
+      <div className="dashboard-grid"><section className="dashboard-card"><h4>Project A</h4><dl><dt>Approved income</dt><dd>{euro(evidence.officialResults.projectA.incomeCents)}</dd><dt>Commission expense</dt><dd>{euro(evidence.officialResults.projectA.commissionCents)}</dd><dt>Allocated expenses</dt><dd>{euro(evidence.officialResults.projectA.expensesCents)}</dd><dt>Result</dt><dd><strong>{euro(evidence.officialResults.projectA.resultCents)}</strong></dd></dl></section><section className="dashboard-card"><h4>Project B</h4><dl><dt>Approved income</dt><dd>{euro(evidence.officialResults.projectB.incomeCents)}</dd><dt>Commission expense</dt><dd>{euro(evidence.officialResults.projectB.commissionCents)}</dd><dt>Allocated expenses</dt><dd>{euro(evidence.officialResults.projectB.expensesCents)}</dd><dt>Result</dt><dd><strong>{euro(evidence.officialResults.projectB.resultCents)}</strong></dd></dl></section><section className="dashboard-card"><h4>Company</h4><dl><dt>Company overhead</dt><dd>{euro(evidence.officialResults.overheadCents)}</dd><dt>Awaiting allocation</dt><dd>{euro(evidence.officialResults.awaitingCents)}</dd><dt>Total result</dt><dd><strong>{euro(evidence.officialResults.companyResultCents)}</strong></dd></dl></section></div>
+      <p className="dashboard-summary">Official commissions — Richard {euro(evidence.officialResults.commissions.richardCents)} · Anastasia {euro(evidence.officialResults.commissions.anastasiaCents)} · Jean-Claude {euro(evidence.officialResults.commissions.jeanClaudeCents)} · Pending sales: {evidence.officialResults.pendingSales} · Expenses awaiting allocation: {evidence.officialResults.awaitingExpenses}</p>
       <h3>Sales S01–S05</h3>
       <div className="table-wrap"><table><thead><tr><th>Ref</th><th>Source</th><th>Original split R / A / J</th><th>Final split R / A / J</th><th>Commission R / A / J</th><th>Status</th><th>Sheets</th><th>Telegram</th></tr></thead><tbody>
         {evidence.sales.length === 0 ? <tr><td colSpan={8}>No required sales have been saved yet.</td></tr> : evidence.sales.map((sale) => <tr key={sale.id}><td>{sale.reference}</td><td>{sale.source}</td><td>{split(sale.proposedSplit)}</td><td>{split(sale.finalSplit)}{sale.splitChanged === true ? " (changed)" : ""}</td><td>{sale.commissionCents ? sale.commissionCents.map(euro).join(" / ") : "€0.00 / €0.00 / €0.00"}</td><td>{status(sale.status)}</td><td>{status(sale.sheetsStatus)}</td><td>Submit: {status(sale.submissionNotification)}; decision: {status(sale.decisionNotification)}</td></tr>)}
