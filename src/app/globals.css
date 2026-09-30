@@ -24,6 +24,10 @@ dt, dd { margin: 0; }
 .dashboard-summary { color: #475569; }
 .telegram-setup { margin: 2rem 0; padding: 1rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; background: #fff; }
 .telegram-setup h2 { margin-top: 0; }
+.reviewer-instructions, .assignment-evidence { margin-top: 2rem; padding: 1.25rem; border: 1px solid #cbd5e1; border-radius: 0.75rem; background: #fff; }
+.reviewer-instructions h2, .assignment-evidence h2 { margin-top: 0; }
+.reviewer-instructions li { margin: 0.65rem 0; }
+.practice-note { padding: 0.85rem; background: #f1f5f9; border-radius: 0.4rem; color: #334155; }
 .queue-list { display: grid; gap: 1rem; }
 .queue-card { padding: 1rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; background: #fff; }
 .queue-card h4 { margin: 0 0 0.5rem; }

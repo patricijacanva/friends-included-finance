@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ExpenseDecisionControls, SaleDecisionControls } from "@/components/manager-decision-controls";
 import { FinancialDashboard } from "@/components/financial-dashboard";
 import { TelegramSetup } from "@/components/telegram-setup";
+import { AssignmentEvidence } from "@/components/assignment-evidence";
 
 type Manager = { id: string; display_name: string };
 type PendingSale = { id: string; reference: string; salesperson: string; customer: string; project: string; description: string; amountCents: number; proposedSplit: number[] };
@@ -44,6 +45,7 @@ export function ManagerReviewQueue({ manager }: { manager: Manager }) {
   return (
     <section className="manager-queue" aria-labelledby="manager-queue-heading">
       <FinancialDashboard managerId={manager.id} refreshKey={refreshKey} />
+      <AssignmentEvidence managerId={manager.id} refreshKey={refreshKey} />
       <TelegramSetup managerId={manager.id} />
       <h2 id="manager-queue-heading">Manager review queue</h2>
       <p>Review original submissions before approving or correcting them.</p>
