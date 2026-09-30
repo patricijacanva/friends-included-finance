@@ -12,7 +12,7 @@ function allocationName(value: "A" | "B" | "company_overhead") {
 export async function notifySaleApproval(saleId: string) {
   const supabase = createSupabaseServerClient();
   const [transactionResult, saleResult, proposalResult, decisionResult, notificationResult] = await Promise.all([
-    supabase.from("transactions").select("reference").eq("id", saleId).single(),
+    supabase.from("transactions").select("reference, source, submitted_by_employee_id").eq("id", saleId).single(),
     supabase.from("sales").select("amount_cents").eq("transaction_id", saleId).single(),
     supabase.from("sale_commission_proposals").select("richard_percent, anastasia_percent, jean_claude_percent").eq("sale_id", saleId).single(),
     supabase.from("sale_commission_decisions").select("richard_percent, anastasia_percent, jean_claude_percent, pool_cents, richard_commission_cents, anastasia_commission_cents, jean_claude_commission_cents, split_changed").eq("sale_id", saleId).single(),
@@ -22,7 +22,19 @@ export async function notifySaleApproval(saleId: string) {
   if (error || !transactionResult.data || !saleResult.data || !proposalResult.data || !decisionResult.data) {
     throw error ?? new Error("Approved sale details are incomplete.");
   }
-  const chatId = notificationResult.data?.chat_id;
+  let chatId = notificationResult.data?.chat_id ?? null;
+  // Website records do not have a chat until a manager links the fictional
+  // employee. Resolve that link at decision time so the manager setup can be
+  // used immediately before approval, as required by the test flow.
+  if (!chatId && transactionResult.data.source === "website") {
+    const { data: identity } = await supabase.from("telegram_identities")
+      .select("last_chat_id").eq("employee_id", transactionResult.data.submitted_by_employee_id).eq("active", true).maybeSingle();
+    chatId = identity?.last_chat_id ?? null;
+    if (chatId) {
+      await supabase.from("telegram_notification_state").update({ chat_id: chatId, status: "pending", error_message: null })
+        .eq("transaction_id", saleId).eq("notification_kind", "sale_approval");
+    }
+  }
   if (!chatId) return { status: "no_recipient" as const };
 
   const transaction = transactionResult.data;
@@ -49,7 +61,7 @@ export async function notifySaleApproval(saleId: string) {
 export async function notifyExpenseAllocation(expenseId: string) {
   const supabase = createSupabaseServerClient();
   const [transactionResult, expenseResult, notificationResult] = await Promise.all([
-    supabase.from("transactions").select("reference").eq("id", expenseId).single(),
+    supabase.from("transactions").select("reference, source, submitted_by_employee_id").eq("id", expenseId).single(),
     supabase.from("expenses").select("description, amount_cents, proposed_allocation, final_allocation").eq("transaction_id", expenseId).single(),
     supabase.from("telegram_notification_state").select("chat_id").eq("transaction_id", expenseId).eq("notification_kind", "expense_allocation").maybeSingle(),
   ]);
@@ -57,7 +69,16 @@ export async function notifyExpenseAllocation(expenseId: string) {
   if (error || !transactionResult.data || !expenseResult.data) {
     throw error ?? new Error("Allocated expense details are incomplete.");
   }
-  const chatId = notificationResult.data?.chat_id;
+  let chatId = notificationResult.data?.chat_id ?? null;
+  if (!chatId && transactionResult.data.source === "website") {
+    const { data: identity } = await supabase.from("telegram_identities")
+      .select("last_chat_id").eq("employee_id", transactionResult.data.submitted_by_employee_id).eq("active", true).maybeSingle();
+    chatId = identity?.last_chat_id ?? null;
+    if (chatId) {
+      await supabase.from("telegram_notification_state").update({ chat_id: chatId, status: "pending", error_message: null })
+        .eq("transaction_id", expenseId).eq("notification_kind", "expense_allocation");
+    }
+  }
   if (!chatId) return { status: "no_recipient" as const };
   const transaction = transactionResult.data;
   const expense = expenseResult.data;
