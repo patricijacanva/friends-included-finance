@@ -88,12 +88,18 @@ async function googleRequest<T>(config: GoogleConfig, path: string, init: Reques
 }
 
 async function ensureTabAndHeaders(config: GoogleConfig, tab: "Sales" | "Expenses", headers: string[]) {
-  const workbook = await googleRequest<{ sheets?: Array<{ properties?: { title?: string } }> }>(config, `spreadsheets/${config.spreadsheetId}?fields=sheets.properties`);
+  const workbook = await googleRequest<{ sheets?: Array<{ properties?: { title?: string } }> }>(config, `spreadsheets/${config.spreadsheetId}?fields=sheets(properties(title))`);
   if (!workbook.sheets?.some((sheet) => sheet.properties?.title === tab)) {
-    await googleRequest(config, `spreadsheets/${config.spreadsheetId}:batchUpdate`, {
-      method: "POST",
-      body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tab } } }] }),
-    });
+    try {
+      await googleRequest(config, `spreadsheets/${config.spreadsheetId}:batchUpdate`, {
+        method: "POST",
+        body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tab } } }] }),
+      });
+    } catch (error) {
+      // Another request may have created the tab after our lookup. The tab is
+      // now usable; any other Google API error must still stop the sync.
+      if (!(error instanceof Error) || !error.message.includes(`sheet with the name "${tab}" already exists`)) throw error;
+    }
   }
   await googleRequest(config, `spreadsheets/${config.spreadsheetId}/values/${encodeURIComponent(`${tab}!A1:${String.fromCharCode(64 + headers.length)}1`)}?valueInputOption=RAW`, {
     method: "PUT", body: JSON.stringify({ values: [headers] }),
