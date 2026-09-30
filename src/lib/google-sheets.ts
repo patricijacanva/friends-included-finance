@@ -41,7 +41,8 @@ function googleConfig(): GoogleConfig {
     : normalizePrivateKey(process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY);
   if (!spreadsheetId || !clientEmail || !privateKey) throw new Error("Google Sheets configuration is incomplete.");
   if (!privateKey.includes("-----BEGIN PRIVATE KEY-----") || !privateKey.includes("-----END PRIVATE KEY-----")) {
-    throw new Error("Google private key is incomplete. Paste the complete private-key value from .env.local into Vercel.");
+    const source = encodedPrivateKey ? `base64 value decoded to ${privateKey.length} characters` : `regular key value has ${privateKey.length} characters`;
+    throw new Error(`Google private key is incomplete (${source}).`);
   }
   return { spreadsheetId, clientEmail, privateKey };
 }
