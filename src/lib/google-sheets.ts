@@ -11,11 +11,30 @@ const EXPENSE_HEADERS = ["Reference", "Submission time", "Reporter", "Descriptio
 
 type GoogleConfig = { spreadsheetId: string; clientEmail: string; privateKey: string };
 
+function normalizePrivateKey(value: string | undefined) {
+  if (!value) return undefined;
+
+  let privateKey = value.trim();
+  if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+    try {
+      const decoded = JSON.parse(privateKey);
+      if (typeof decoded === "string") privateKey = decoded;
+    } catch {
+      privateKey = privateKey.slice(1, -1);
+    }
+  }
+
+  return privateKey.replace(/\\n/g, "\n").replace(/\\r/g, "\r");
+}
+
 function googleConfig(): GoogleConfig {
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/^"|"$/g, "").replace(/\\n/g, "\n");
+  const privateKey = normalizePrivateKey(process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY);
   if (!spreadsheetId || !clientEmail || !privateKey) throw new Error("Google Sheets configuration is incomplete.");
+  if (!privateKey.includes("-----BEGIN PRIVATE KEY-----") || !privateKey.includes("-----END PRIVATE KEY-----")) {
+    throw new Error("Google private key is incomplete. Paste the complete private-key value from .env.local into Vercel.");
+  }
   return { spreadsheetId, clientEmail, privateKey };
 }
 
