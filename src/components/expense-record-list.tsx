@@ -21,6 +21,18 @@ export function ExpenseRecordList({ employee, refreshKey }: { employee: Employee
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+
+  async function retry(transactionId: string) {
+    setRetryingId(transactionId); setError("");
+    try {
+      const response = await fetch("/api/sheets/retry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ actorEmployeeId: employee.id, transactionId }) });
+      const payload = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Unable to retry synchronization.");
+      setExpenses((current) => current.map((expense) => expense.id === transactionId ? { ...expense, syncStatus: "synced" } : expense));
+    } catch (caughtError) { setError(caughtError instanceof Error ? caughtError.message : "Unable to retry synchronization."); }
+    finally { setRetryingId(null); }
+  }
 
   useEffect(() => {
     async function loadExpenses() {
@@ -46,8 +58,8 @@ export function ExpenseRecordList({ employee, refreshKey }: { employee: Employee
       {isLoading ? <p>Loading expenses…</p> : null}
       {error ? <p className="error" role="alert">{error}</p> : null}
       {!isLoading && !error && expenses.length === 0 ? <p>No expenses submitted yet.</p> : null}
-      {!isLoading && !error && expenses.length > 0 ? <div className="table-wrap"><table><thead><tr><th>Reference</th><th>Amount</th><th>Proposed</th><th>Final</th><th>Status</th><th>Sheets</th></tr></thead><tbody>
-        {expenses.map((expense) => <tr key={expense.id}><td>{expense.reference}</td><td>{euro(expense.amountCents)}</td><td>{allocationLabel(expense.proposedAllocation)}</td><td>{allocationLabel(expense.finalAllocation)}</td><td>{expense.status === "awaiting_allocation" ? "Awaiting allocation" : expense.status === "allocated_overhead" ? "Company overhead" : "Allocated"}</td><td>{expense.syncStatus === "pending" ? "Sync pending" : expense.syncStatus === "failed" ? "Sync failed" : "Synced"}</td></tr>)}
+      {!isLoading && !error && expenses.length > 0 ? <div className="table-wrap"><table><thead><tr><th>Reference</th><th>Amount</th><th>Proposed</th><th>Final</th><th>Status</th><th>Sheets</th><th>Action</th></tr></thead><tbody>
+        {expenses.map((expense) => <tr key={expense.id}><td>{expense.reference}</td><td>{euro(expense.amountCents)}</td><td>{allocationLabel(expense.proposedAllocation)}</td><td>{allocationLabel(expense.finalAllocation)}</td><td>{expense.status === "awaiting_allocation" ? "Awaiting allocation" : expense.status === "allocated_overhead" ? "Company overhead" : "Allocated"}</td><td>{expense.syncStatus === "pending" ? "Sync pending" : expense.syncStatus === "failed" ? "Sync failed" : "Synced"}</td><td>{expense.syncStatus === "synced" ? "—" : <button type="button" onClick={() => void retry(expense.id)} disabled={retryingId === expense.id}>{retryingId === expense.id ? "Retrying…" : "Retry sync"}</button>}</td></tr>)}
       </tbody></table></div> : null}
     </section>
   );

@@ -26,6 +26,18 @@ export function SalesRecordList({ employee, refreshKey }: { employee: Salesperso
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+
+  async function retry(transactionId: string) {
+    setRetryingId(transactionId); setError("");
+    try {
+      const response = await fetch("/api/sheets/retry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ actorEmployeeId: employee.id, transactionId }) });
+      const payload = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Unable to retry synchronization.");
+      setSales((current) => current.map((sale) => sale.id === transactionId ? { ...sale, syncStatus: "synced" } : sale));
+    } catch (caughtError) { setError(caughtError instanceof Error ? caughtError.message : "Unable to retry synchronization."); }
+    finally { setRetryingId(null); }
+  }
 
   useEffect(() => {
     async function loadSales() {
@@ -56,7 +68,7 @@ export function SalesRecordList({ employee, refreshKey }: { employee: Salesperso
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Reference</th><th>Project</th><th>Amount</th><th>Status</th><th>Sheets</th></tr>
+              <tr><th>Reference</th><th>Project</th><th>Amount</th><th>Status</th><th>Sheets</th><th>Action</th></tr>
             </thead>
             <tbody>
               {sales.map((sale) => (
@@ -66,6 +78,7 @@ export function SalesRecordList({ employee, refreshKey }: { employee: Salesperso
                   <td>{euro(sale.amountCents)}</td>
                   <td>{sale.status === "pending_approval" ? "Pending approval" : "Approved"}</td>
                   <td>{sale.syncStatus === "pending" ? "Sync pending" : sale.syncStatus === "failed" ? "Sync failed" : "Synced"}</td>
+                  <td>{sale.syncStatus === "synced" ? "—" : <button type="button" onClick={() => void retry(sale.id)} disabled={retryingId === sale.id}>{retryingId === sale.id ? "Retrying…" : "Retry sync"}</button>}</td>
                 </tr>
               ))}
             </tbody>
