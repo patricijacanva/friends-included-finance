@@ -24,7 +24,9 @@ function normalizePrivateKey(value: string | undefined) {
     }
   }
 
-  return privateKey.replace(/\\n/g, "\n").replace(/\\r/g, "\r");
+  // Vercel values can retain one or more layers of escaped newlines. A PEM
+  // key contains no literal backslashes, so collapse every such layer.
+  return privateKey.replace(/\\+n/g, "\n").replace(/\\+r/g, "\r");
 }
 
 function googleConfig(): GoogleConfig {
