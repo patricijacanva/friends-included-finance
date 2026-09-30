@@ -24,6 +24,9 @@ function normalizePrivateKey(value: string | undefined) {
     }
   }
 
+  const pem = privateKey.match(/-----BEGIN PRIVATE KEY-----[\s\S]*-----END PRIVATE KEY-----/);
+  if (pem) privateKey = pem[0];
+
   // Vercel values can retain one or more layers of escaped newlines. A PEM
   // key contains no literal backslashes, so collapse every such layer.
   return privateKey.replace(/\\+n/g, "\n").replace(/\\+r/g, "\r");
