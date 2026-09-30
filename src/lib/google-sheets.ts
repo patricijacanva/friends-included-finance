@@ -164,6 +164,10 @@ export async function syncAndRecord(transactionId: string) {
     if (error) throw error;
     return { status: "synced" as const };
   } catch (error) {
+    console.error("Google Sheets sync failed", {
+      transactionId,
+      message: error instanceof Error ? error.message : "Unknown Google Sheets sync error",
+    });
     const { error: stateError } = await supabase.from("sheets_sync_state").update({
       status: "failed", attempt_count: (current?.attempt_count ?? 0) + 1, last_attempt_at: new Date().toISOString(), error_message: error instanceof Error ? error.message : "Google Sheets sync failed", updated_at: new Date().toISOString(),
     }).eq("transaction_id", transactionId);
